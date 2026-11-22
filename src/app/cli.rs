@@ -11,8 +11,10 @@ use crate::adapters::ix500::identity;
 use crate::adapters::ix500::{Ix500Locator, Ix500Scanner};
 use crate::adapters::output::FileScanOutput;
 use crate::adapters::scansnap_wifi::identity::{format_hex, local_identity_for, parse_mac};
-use crate::core::{ColorMode, ImageInfo, MultifeedDetection, PageSize, Result, ScanSettings};
-use crate::ports::{ScanOutput, ScannerLocator, ScannerPort};
+use crate::core::{
+    ColorMode, ImageInfo, MultifeedDetection, PageSize, Result, ScanSettings, Sheet,
+};
+use crate::ports::{ScannerLocator, ScannerPort, WrittenPage};
 
 const PASSWORD_ENV: &str = "FERRISCAN_IX500_PASSWORD";
 
@@ -209,21 +211,12 @@ fn run_ix500(arguments: Ix500Args) -> Result<()> {
                 },
             };
             let mut output = FileScanOutput::new(out, force)?;
-            let mut index = 0_u32;
-            let summary = scanner.scan(&settings, &mut |sheet| {
-                index += 1;
-                for page in output.write(index, &sheet)? {
-                    println!("Sheet {index}: {}", page.path.display());
-                }
-                if let Some(info) = &sheet.info {
-                    println!("  {}", describe(info));
-                    if debug {
-                        println!("  raw image info: {}", format_hex(&info.raw));
-                    }
-                }
-                Ok(())
-            })?;
-            scanner.disconnect()?;
+            let summary = super::scan::run(
+                &mut scanner,
+                &mut output,
+                &settings,
+                &mut |index, sheet, written| report_sheet(index, sheet, written, debug),
+            )?;
             println!(
                 "Scanned {} sheet(s), saved {} image(s).",
                 summary.sheets, summary.images
@@ -266,6 +259,18 @@ fn report_identity(scanner: &Ix500Scanner) {
         );
     } else if let Some(error) = scanner.identity_save_error() {
         eprintln!("warning: identity was not saved: {error}");
+    }
+}
+
+fn report_sheet(index: u32, sheet: &Sheet, written: &[WrittenPage], debug: bool) {
+    for page in written {
+        println!("Sheet {index}: {}", page.path.display());
+    }
+    if let Some(info) = &sheet.info {
+        println!("  {}", describe(info));
+        if debug {
+            println!("  raw image info: {}", format_hex(&info.raw));
+        }
     }
 }
 
