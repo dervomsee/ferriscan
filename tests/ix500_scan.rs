@@ -158,18 +158,21 @@ fn two_sheets_follow_the_documented_scan_sequence() {
     let mock = MockIx500::start(2, None, None);
     let expected_images = mock.images.clone();
     let mut pages = Vec::new();
-    {
+    let summary = {
         let mut channel = mock.channel();
         Scanner::new(&mut channel)
             .scan(&ScanSettings::default(), &mut |sheet| {
                 pages.push(sheet);
                 Ok(())
             })
-            .unwrap();
-    }
+            .unwrap()
+    };
     let recording = mock.finish();
 
     assert_eq!(pages.len(), 2);
+    assert_eq!(summary.sheets, 2);
+    // The default settings are duplex, so each sheet contributes a front and a back image.
+    assert_eq!(summary.images, 4);
     assert_eq!(pages[0].front, expected_images[0]);
     assert_eq!(pages[0].back.as_ref().unwrap(), &expected_images[1]);
     let info = pages[0].info.as_ref().unwrap();
@@ -257,17 +260,19 @@ fn chunked_images_are_reassembled_and_simplex_discards_back() {
         duplex: false,
         ..ScanSettings::default()
     };
-    {
+    let summary = {
         let mut channel = mock.channel();
         Scanner::new(&mut channel)
             .scan(&settings, &mut |sheet| {
                 pages.push(sheet);
                 Ok(())
             })
-            .unwrap();
-    }
+            .unwrap()
+    };
     let recording = mock.finish();
     assert_eq!(pages.len(), 1);
+    assert_eq!(summary.sheets, 1);
+    assert_eq!(summary.images, 1);
     assert_eq!(pages[0].front, expected_front);
     assert!(pages[0].back.is_none());
     assert!(

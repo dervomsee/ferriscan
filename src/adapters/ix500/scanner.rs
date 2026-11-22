@@ -6,7 +6,8 @@ use std::time::Duration;
 use super::scsi::{CHECK_CONDITION, ScsiChannel};
 use crate::adapters::scansnap_wifi::scsi::scsi_error;
 use crate::core::{
-    ColorMode, Error, ImageInfo, MultifeedDetection, PageSize, Result, ScanSettings, Sheet,
+    ColorMode, Error, ImageInfo, MultifeedDetection, PageSize, Result, ScanSettings, ScanSummary,
+    Sheet,
 };
 
 pub const READ_LEN: usize = 0x30_0000;
@@ -17,7 +18,7 @@ pub fn check_dpi(dpi: u16) -> Result<u16> {
     if DPIS.contains(&dpi) {
         Ok(dpi)
     } else {
-        Err(Error::Input(format!(
+        Err(Error::Unsupported(format!(
             "dpi must be one of {}, got {dpi}",
             DPIS.map(|value| value.to_string()).join("/")
         )))
@@ -203,9 +204,9 @@ impl<'a> Scanner<'a> {
         &mut self,
         settings: &ScanSettings,
         on_sheet: &mut dyn FnMut(Sheet) -> Result<()>,
-    ) -> Result<()> {
+    ) -> Result<ScanSummary> {
         if settings.color_mode == ColorMode::Gray {
-            return Err(Error::Input(
+            return Err(Error::Unsupported(
                 "iX500 grayscale conversion is not implemented yet; use color mode".into(),
             ));
         }
@@ -228,16 +229,16 @@ impl<'a> Scanner<'a> {
 
         // UNVERIFIED: the one-byte image index wraps after 128 sheets in one job.
         let mut index = 0_u8;
-        let mut sheets = 0_u32;
+        let mut summary = ScanSummary::default();
         loop {
             let feed = self.channel.command(&[0xe0, 0, 0, 0, 0, 0], &[], 0)?;
             if feed.status == CHECK_CONDITION {
                 let sense = self.channel.request_sense()?;
                 if sense.no_paper() {
-                    if sheets == 0 {
+                    if summary.sheets == 0 {
                         return Err(Error::NoPaper);
                     }
-                    return Ok(());
+                    return Ok(summary);
                 }
                 return Err(scsi_error("paper feed failed", sense));
             }
@@ -257,7 +258,8 @@ impl<'a> Scanner<'a> {
                 info: Some(info),
             })?;
             index = index.wrapping_add(2);
-            sheets += 1;
+            summary.sheets += 1;
+            summary.images += 1 + u32::from(settings.duplex);
         }
     }
 }

@@ -47,6 +47,7 @@ src/
     ix1500/                iX1500 registration, profiles, and model-specific scanning
     ix500/                 iX500 registration and model-specific scanning
     <model>/               future model-specific drivers
+    output/                filesystem page output behind the ports output trait
     slint_gui/             Slint GUI adapter (when the GUI is introduced)
   app/                     use cases, driver registry, and composition root
   main.rs                  thin executable entry point

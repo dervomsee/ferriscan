@@ -9,6 +9,10 @@ pub enum Error {
     Protocol(String),
     #[error("invalid input: {0}")]
     Input(String),
+    #[error("unsupported setting: {0}")]
+    Unsupported(String),
+    #[error("refusing to overwrite existing file: {0}")]
+    OutputExists(String),
     #[error("SCSI error: {0}")]
     Scsi(String),
     #[error("no paper in feeder")]

@@ -10,7 +10,7 @@ use super::identity::{self, StoredIdentity};
 use super::scanner::{Scanner, release};
 use super::scsi::ScsiChannel;
 use crate::adapters::scansnap_wifi::discovery::local_ip_for;
-use crate::core::{Error, Result, ScanSettings, Sheet};
+use crate::core::{Error, Result, ScanSettings, ScanSummary, Sheet};
 use crate::ports::ScannerPort;
 
 pub const DISCOVERY_ATTEMPTS: u8 = 3;
@@ -234,7 +234,7 @@ impl ScannerPort for Ix500Scanner {
         &mut self,
         settings: &ScanSettings,
         on_sheet: &mut dyn FnMut(Sheet) -> Result<()>,
-    ) -> Result<()> {
+    ) -> Result<ScanSummary> {
         self.connect()?;
         let port = self.scan_port()?;
         let mut channel = ScsiChannel::connect(self.ip, self.mac, port, SCAN_TIMEOUT)?;
@@ -245,7 +245,7 @@ impl ScannerPort for Ix500Scanner {
         let release_result = release(self.ip, self.mac, port);
         match scan_result {
             Err(error) => Err(error),
-            Ok(()) => release_result,
+            Ok(summary) => release_result.map(|()| summary),
         }
     }
 }

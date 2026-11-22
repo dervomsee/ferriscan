@@ -86,6 +86,10 @@ paper when the session ends, so Ferriscan intentionally provides no sheet-limit 
 only a stack you intend to scan completely. With `--duplex` one sheet yields a front and a back image.
 `--debug` prints the raw 32-byte image-info block per sheet.
 
+Each page file is written through a temporary file and then renamed into place, so an interrupted run
+cannot leave a truncated image. Existing `pageNNN_*.jpg` files are never replaced unless `--force` is
+given; without it, the scan fails before writing.
+
 ## Development
 
 Install a stable Rust toolchain with Rustfmt and Clippy. The repository's toolchain configuration selects

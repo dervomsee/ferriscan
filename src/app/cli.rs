@@ -1,8 +1,7 @@
 //! Command-line composition root for the iX500 implementation.
 
-use std::fs;
 use std::net::Ipv4Addr;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -10,11 +9,10 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use crate::adapters::ix500::discovery::ScannerInfo;
 use crate::adapters::ix500::identity;
 use crate::adapters::ix500::{Ix500Locator, Ix500Scanner};
+use crate::adapters::output::FileScanOutput;
 use crate::adapters::scansnap_wifi::identity::{format_hex, local_identity_for, parse_mac};
-use crate::core::{
-    ColorMode, ImageInfo, MultifeedDetection, PageSize, Result, ScanSettings, Sheet,
-};
-use crate::ports::{ScannerLocator, ScannerPort};
+use crate::core::{ColorMode, ImageInfo, MultifeedDetection, PageSize, Result, ScanSettings};
+use crate::ports::{ScanOutput, ScannerLocator, ScannerPort};
 
 const PASSWORD_ENV: &str = "FERRISCAN_IX500_PASSWORD";
 
@@ -84,6 +82,9 @@ enum Ix500Command {
         /// Output directory for pageNNN_front.jpg and pageNNN_back.jpg.
         #[arg(long, default_value = "scans")]
         out: PathBuf,
+        /// Overwrite existing page files instead of refusing to replace them.
+        #[arg(long)]
+        force: bool,
         /// Color mode; grayscale host conversion is not implemented yet.
         #[arg(long, value_enum, default_value_t = ColorArg::Color)]
         mode: ColorArg,
@@ -182,6 +183,7 @@ fn run_ix500(arguments: Ix500Args) -> Result<()> {
             ip,
             password,
             out,
+            force,
             mode,
             dpi,
             duplex,
@@ -206,15 +208,26 @@ fn run_ix500(arguments: Ix500Args) -> Result<()> {
                     MultifeedArg::Ultrasonic => MultifeedDetection::Ultrasonic,
                 },
             };
-            fs::create_dir_all(&out)?;
-            let mut index = 0_usize;
-            scanner.scan(&settings, &mut |sheet| {
+            let mut output = FileScanOutput::new(out, force)?;
+            let mut index = 0_u32;
+            let summary = scanner.scan(&settings, &mut |sheet| {
                 index += 1;
-                save_sheet(&out, index, &sheet, debug)
+                for page in output.write(index, &sheet)? {
+                    println!("Sheet {index}: {}", page.path.display());
+                }
+                if let Some(info) = &sheet.info {
+                    println!("  {}", describe(info));
+                    if debug {
+                        println!("  raw image info: {}", format_hex(&info.raw));
+                    }
+                }
+                Ok(())
             })?;
             scanner.disconnect()?;
-            let images = if duplex { index * 2 } else { index };
-            println!("Scanned {index} sheet(s), saved {images} image(s).");
+            println!(
+                "Scanned {} sheet(s), saved {} image(s).",
+                summary.sheets, summary.images
+            );
             report_identity(&scanner);
             Ok(())
         }
@@ -254,24 +267,6 @@ fn report_identity(scanner: &Ix500Scanner) {
     } else if let Some(error) = scanner.identity_save_error() {
         eprintln!("warning: identity was not saved: {error}");
     }
-}
-
-fn save_sheet(out: &Path, index: usize, sheet: &Sheet, debug: bool) -> Result<()> {
-    let front = out.join(format!("page{index:03}_front.jpg"));
-    fs::write(&front, &sheet.front)?;
-    println!("Sheet {index}: {}", front.display());
-    if let Some(back) = &sheet.back {
-        let path = out.join(format!("page{index:03}_back.jpg"));
-        fs::write(&path, back)?;
-        println!("Sheet {index}: {}", path.display());
-    }
-    if let Some(info) = &sheet.info {
-        println!("  {}", describe(info));
-        if debug {
-            println!("  raw image info: {}", format_hex(&info.raw));
-        }
-    }
-    Ok(())
 }
 
 fn describe(info: &ImageInfo) -> String {
@@ -347,6 +342,7 @@ mod tests {
                 "--duplex",
                 "--page",
                 "a4",
+                "--force",
                 "--debug",
             ])
             .is_ok()

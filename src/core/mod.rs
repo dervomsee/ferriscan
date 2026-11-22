@@ -5,6 +5,6 @@ mod model;
 
 pub use error::{Error, Result};
 pub use model::{
-    ColorMode, FoundScanner, ImageInfo, MultifeedDetection, PageSize, ScanSettings, Sheet,
-    Transport,
+    ColorMode, FoundScanner, ImageInfo, MultifeedDetection, PageSide, PageSize, ScanSettings,
+    ScanSummary, Sheet, Transport,
 };

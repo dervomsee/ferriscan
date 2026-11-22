@@ -12,6 +12,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Removed the misleading `--max-sheets` option. Every scan now always reads and saves every sheet until the
   feeder is empty, matching the iX500's behavior of clearing the stack when the session ends.
 
+### Changed
+
+- `ix500 scan` reports sheet and image counts from the adapter's scan result instead of counting in the
+  command layer.
+
 ### Fixed
 
 - Resolve the Linux interface MAC through sysfs when the matching `getifaddrs` IPv4 entry has no
@@ -27,6 +32,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Transport-neutral scan result and output boundary: `ScannerPort::scan` now returns a `ScanSummary`
+  (sheets and images), and a `ScanOutput` port persists sheets with a filesystem adapter that writes page
+  files through a temporary file and refuses to overwrite existing files unless `ix500 scan --force` is
+  given.
+- `ix500 scan --force` to replace existing page files, and distinct `unsupported setting` and
+  `refusing to overwrite existing file` error messages.
 - Persistent iX500 identity file storing the paired host ID and the scanner Wi-Fi password (mode 0600), so
   scanning no longer requires the password on every run. `--identity` and `--no-save` control it, and
   `ix500 info` now registers the host because the scanner requires that before its name query.

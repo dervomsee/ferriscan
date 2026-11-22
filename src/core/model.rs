@@ -98,3 +98,19 @@ pub struct Sheet {
     pub back: Option<Vec<u8>>,
     pub info: Option<ImageInfo>,
 }
+
+/// Which side of a fed sheet an image belongs to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PageSide {
+    Front,
+    Back,
+}
+
+/// Outcome of one completed scan run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ScanSummary {
+    /// Sheets pulled through the feeder and delivered to the caller.
+    pub sheets: u32,
+    /// Images delivered: fronts plus, in duplex mode, backs.
+    pub images: u32,
+}
