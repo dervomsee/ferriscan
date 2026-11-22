@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "rust": {
+      "command": "~/.cargo/bin/rust-mcp-server",
+      "args": [
+        "--workspace",
+        "."
+      ],
+      "exposure": "deferred",
+      "description": "Rust build, test, lint, dependency, and toolchain tools for Ferriscan"
+    },
+    "slint": {
+      "url": "http://127.0.0.1:8080/mcp",
+      "enabled": false,
+      "exposure": "deferred",
+      "description": "Inspect and drive the Ferriscan Slint GUI when its embedded development server is running"
+    }
+  }
+}

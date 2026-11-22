@@ -1,0 +1,28 @@
+/target/
+**/*.rs.bk
+
+# Local reference checkout; documentation is adapted with attribution in NOTICE.md.
+/scansnack-main/
+
+# Sensitive reverse-engineering material and scanner output.
+*.pcap
+*.pcapng
+*.cap
+/captures/
+/scans*/
+
+# Local iX500 identity file; contains the scanner Wi-Fi password in plain text.
+ix500.conf
+*.conf.tmp
+*.log
+anonymize.json
+users_backup*.json
+identity.json
+ssh-identity.json
+
+# Local tooling and operating-system files.
+.env
+.envrc
+.DS_Store
+.idea/
+.vscode/

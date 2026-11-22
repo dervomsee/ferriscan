@@ -1,0 +1,28 @@
+[package]
+name = "ferriscan"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Independent Wi-Fi scanning for ScanSnap devices"
+license = "MIT"
+publish = false
+
+[dependencies]
+clap = { version = "4.5", features = ["derive", "env"] }
+nix = { version = "0.30", features = ["net"] }
+thiserror = "2"
+time = { version = "0.3", features = ["local-offset"] }
+
+[dev-dependencies]
+hex = "0.4"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Public functions share the crate's documented Result type; repeating identical error lists adds noise.
+missing_errors_doc = "allow"
+# Product names such as ScanSnap and Slint do not need code formatting in prose.
+doc_markdown = "allow"
