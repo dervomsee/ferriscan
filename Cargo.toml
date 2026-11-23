@@ -2,7 +2,7 @@
 name = "ferriscan"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.100"
 description = "Independent Wi-Fi scanning for ScanSnap devices"
 license = "MIT"
 publish = false
